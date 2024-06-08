@@ -10,15 +10,21 @@ export  const verifyJWT = asyncHandler(async(req, _, next) => {
        new ApiError(401, "Unauthorized" , 'No token provided');
     }
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
-    const user = await User.findById(decodedToken?._id).select("-password -refreshToken");
+    const email = decodedToken.email
+    const username = decodedToken.username
+    const user = await User.findOne({
+      $or: [{email, username}]
+    })
+    console.log("user:-",user);
     if(!user){
       //
       new ApiError(401, "Invalid Access Token")
     }
+    req.user = user
   }catch(err){
-    throw new ApiError(401, "Invalid access Token");
+    throw new ApiError(401, "Database Failed");
   }
 
-req.user = user
+
   next();
 })
