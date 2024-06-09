@@ -54,14 +54,11 @@ const registerUser = asyncHandler(async(req, res) => {
       let coverImageLocalPath;
   if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
     coverImageLocalPath = req.files.coverImage[0].path;
-
   }
       if(!avatarLocalPath){
         throw new ApiError(400, "Avatar file is required");
       }
-
   //upload images in cloudinary
-
     const avatar = await uploadOnCloudinary(avatarLocalPath)
   const coverImage = await uploadOnCloudinary(coverImageLocalPath)
   // console.log(avatar);
@@ -91,7 +88,6 @@ const registerUser = asyncHandler(async(req, res) => {
     new ApiResponse(200,createdUser, "User successfully registered"),
   )
 })
-
 const loginUser = asyncHandler(async(req, res) => {
   //req body
 
@@ -150,11 +146,7 @@ const logoutUser = asyncHandler(async(req, res) => {
     new ApiResponse(200, "User logged out successfully")
   )
 })
-
 const refreshAccessToken = asyncHandler(async(req, res) => {
-
-
-
     try {
       const incomingRefreshToken =  req.cookies.refreshToken || req.body.refreshToken
       if (!incomingRefreshToken){
@@ -191,6 +183,51 @@ const refreshAccessToken = asyncHandler(async(req, res) => {
     }
 
 })
+const changePassword = asyncHandler(async(req, res) => {
+  const {oldPassword,newPassword} = req.body
+  const userID = req.user?._id;
+  const user = await User.findById(userID)
+const isPasswordValid = await user.isPasswordCorrect(oldPassword)
+  if (!isPasswordValid){
+    throw new ApiError(404, "Invalid password")
+  }
 
+  user.password = newPassword;
+  await user.save({validateBeforeSave: false})
+  res.status(200).json(
+    new ApiResponse(201, {}, "Password Changed Succesfully")
+  )
+})
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken}
+const getUser = asyncHandler(async (req, res) => {
+  res.status(200).json(
+    new ApiResponse(200, req.user, "This is User")
+  );
+})
+
+const updateUserDetails = asyncHandler(async (req, res) => {
+  const {newUsername, newFullName, newEmail} = req.body
+  console.log(newUsername, newFullName, newEmail);
+  if(!(newUsername || newFullName || newEmail)){
+    throw new ApiError(401, "Invalid all fields are required")
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set:{
+        fullName: newFullName,
+        email: newEmail,
+        username: newUsername
+      }
+    },{new: true}
+
+  ).select("-password")
+
+  await user.save({validateBeforeSave: false})
+  res.status(200).json(
+    new ApiResponse(200, user, "User details changed successfully")
+  )
+
+})
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken, changePassword, getUser, updateUserDetails}
