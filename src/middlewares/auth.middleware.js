@@ -5,8 +5,9 @@ import { ApiError } from "../utils/apiError.js";
 
 export  const verifyJWT = asyncHandler(async(req, _, next) => {
   try{
-    const token =  req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '')
 
+    const token =  req.cookies?.accessToken || req.header('Authorization')?.replace('Bearer ', '')
+    console.log(token);
     if (!token) {
        new ApiError(401, "Unauthorized" , 'No token provided');
     }
@@ -17,6 +18,7 @@ export  const verifyJWT = asyncHandler(async(req, _, next) => {
     const user = await User.findOne({
       $or: [{ username, email}]
     })
+    console.log("auth", user);
     if(!user){
       new ApiError(401, "Invalid Access Token")
     }
@@ -24,7 +26,8 @@ export  const verifyJWT = asyncHandler(async(req, _, next) => {
     req.user = user
 
   }catch(err){
-    throw new ApiError(401, "Database Failed");
+    console.log(err);
+    throw new ApiError(404, "Database Connection took long time");
   }
   next();
 })
